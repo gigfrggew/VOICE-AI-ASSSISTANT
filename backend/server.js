@@ -25,7 +25,8 @@ const PORT = process.env.PORT || 5000;
 
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://voice-ai-assistant.vercel.app",
+  "https://voice-ai-asssistant.vercel.app",
+  
 ];
 
 app.use(
