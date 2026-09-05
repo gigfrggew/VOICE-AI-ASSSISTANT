@@ -26,19 +26,23 @@ async function AIConversationController(req, res) {
     // 1. Check business ownership
     // ---------------------------------------
 
-    const business = await Business.findOne({
-      _id: businessId,
-      owner: req.user._id,
-    });
+    let business;
 
+    if (req.user.role === "business_owner") {
+      business = await Business.findOne({
+        _id: businessId,
+        owner: req.user._id,
+      });
+    } else if (req.user.role === "customer") {
+      business = await Business.findOne({
+        _id: businessId,
+      });
+    }
 
     if (!business) {
-
       return res.status(404).json({
-        message:
-          "Business not found or you are not authorized",
+        message: "Business not found or you are not authorized",
       });
-
     }
 
 
@@ -148,8 +152,7 @@ Required: ${field.required}`
           (message) =>
             `${message.role === "user"
               ? "Customer"
-              : "Assistant"}: ${
-              message.message
+              : "Assistant"}: ${message.message
             }`
         )
         .join("\n");
@@ -279,8 +282,7 @@ ${conversationHistory}
           (message) =>
             `${message.role === "user"
               ? "Customer"
-              : "Assistant"}: ${
-              message.message
+              : "Assistant"}: ${message.message
             }`
         )
         .join("\n");

@@ -20,9 +20,15 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
 
-    refreshToken:{
-      type:String,
-      default:null
+    role: {
+      type: String,
+      enum: ["business_owner", "customer"],
+      default: "business_owner",
+    },
+
+    refreshToken: {
+      type: String,
+      default: null,
     },
   },
   {

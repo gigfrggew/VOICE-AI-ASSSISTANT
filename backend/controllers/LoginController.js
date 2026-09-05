@@ -1,12 +1,10 @@
 import bcrypt from "bcryptjs";
 import User from "../models/UserModel.js";
-import jwt from "jsonwebtoken"
+import jwt from "jsonwebtoken";
 
 async function LoginController(req, res) {
   try {
     const { email, password } = req.body;
-
-    console.log(req.body)
 
     const user = await User.findOne({ email });
 
@@ -30,13 +28,14 @@ async function LoginController(req, res) {
     const accessToken = jwt.sign(
       {
         userId: user._id,
-        email: user.email
+        email: user.email,
+        role: user.role,
       },
       process.env.JWT_ACCESS_SECRET,
       {
-        expiresIn: "1h"
+        expiresIn: "1h",
       }
-    )
+    );
 
     const refreshToken = jwt.sign(
       {
@@ -47,7 +46,6 @@ async function LoginController(req, res) {
         expiresIn: "7d",
       }
     );
-
 
     user.refreshToken = refreshToken;
     await user.save();
@@ -66,18 +64,18 @@ async function LoginController(req, res) {
       maxAge: 60 * 60 * 1000,
     });
 
-
     res.status(200).json({
       message: "Login successful",
+      accessToken,
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
+        role: user.role,
       },
     });
-
   } catch (error) {
-    console.error(error);
+    console.error("Login Error:", error);
 
     res.status(500).json({
       message: "Something went wrong while logging in",

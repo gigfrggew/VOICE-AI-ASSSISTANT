@@ -12,6 +12,8 @@ import AIConversationRoute from "./routes/AIConversationRoute.js";
 import cookieParser from "cookie-parser";
 import AITestRoute from "./routes/AITestRoute.js";
 import CalendarRoute from "./routes/CalendarRoute.js";
+import CustomerRoute from "./routes/CustomerRoute.js";
+import LogoutRoute from "./routes/LogoutRoute.js";
 
 import dotenv from "dotenv";
 dotenv.config();
@@ -46,6 +48,8 @@ app.use("/conversation", ConversationRoute);
 app.use("/ai-test", AITestRoute);
 app.use("/ai-conversation", AIConversationRoute);
 app.use("/calendar", CalendarRoute);
+app.use("/customer", CustomerRoute);
+app.use("/logout", LogoutRoute);
 
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
