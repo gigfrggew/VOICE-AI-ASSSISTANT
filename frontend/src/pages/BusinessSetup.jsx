@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/BusinessSetup.css";
+import API_URL from "../services/api";
 
 function BusinessSetup() {
   const navigate = useNavigate();
@@ -28,7 +29,7 @@ function BusinessSetup() {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5000/business", {
+      const response = await fetch(`${API_URL}/business`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
