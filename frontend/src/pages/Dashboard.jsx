@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import API_URL from "../services/api";
+import { useNavigate } from "react-router-dom";
 
 function Dashboard() {
   const { accessToken, logout } = useAuth();
+  const navigate = useNavigate();
 
   const [business, setBusiness] = useState(null);
   const [error, setError] = useState("");
@@ -22,8 +24,14 @@ function Dashboard() {
 
         const data = await response.json();
 
+        if (response.status === 404) {
+          navigate("/business-setup");
+          return;
+        }
+
         if (!response.ok) {
-          throw new Error(data.message || "Failed to fetch business");
+          setError(data.message || "Failed to fetch business");
+          return;
         }
 
         setBusiness(data.business);
@@ -37,16 +45,13 @@ function Dashboard() {
     if (accessToken) {
       fetchBusiness();
     }
-  }, [accessToken]);
+  }, [accessToken, navigate]);
 
   return (
     <div className="dashboard">
       <header className="dashboard-header">
         <h1>Dashboard</h1>
-
-        <button onClick={logout}>
-          Logout
-        </button>
+        <button onClick={logout}>Logout</button>
       </header>
 
       <main>
@@ -54,37 +59,29 @@ function Dashboard() {
 
         {loading && <p>Loading business...</p>}
 
-        {error && (
-          <p className="error-message">
-            {error}
-          </p>
-        )}
+        {error && <p className="error-message">{error}</p>}
 
         {!loading && !error && business && (
           <div className="business-card">
             <h3>{business.businessName}</h3>
 
             <p>
-              <strong>Type:</strong>{" "}
-              {business.businessType}
+              <strong>Type:</strong> {business.businessType}
             </p>
 
             <p>
-              <strong>Phone:</strong>{" "}
-              {business.phone}
+              <strong>Phone:</strong> {business.phone}
             </p>
 
             {business.description && (
               <p>
-                <strong>Description:</strong>{" "}
-                {business.description}
+                <strong>Description:</strong> {business.description}
               </p>
             )}
 
             <button
               onClick={() => {
-                window.location.href =
-                  `${API_URL}/calendar/auth?businessId=${business.id}`;
+                window.location.href = `${API_URL}/calendar/auth?businessId=${business.id}`;
               }}
             >
               Connect Google Calendar
@@ -94,6 +91,18 @@ function Dashboard() {
 
         {!loading && !error && !business && (
           <p>No business found.</p>
+        )}
+
+        {!loading && business && (
+          <div>
+            <button onClick={() => navigate("/workflows")}>
+              Manage Workflows
+            </button>
+
+            <button onClick={() => navigate("/conversations")}>
+              View Conversations
+            </button>
+          </div>
         )}
       </main>
     </div>

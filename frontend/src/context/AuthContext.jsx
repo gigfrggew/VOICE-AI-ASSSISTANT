@@ -1,4 +1,5 @@
 import { createContext, useContext, useState } from "react";
+import API_URL from "../services/api";
 
 const AuthContext = createContext();
 
@@ -7,24 +8,39 @@ export function AuthProvider({ children }) {
     localStorage.getItem("accessToken")
   );
 
-  function login(token) {
+  const [role, setRole] = useState(
+    localStorage.getItem("role")
+  );
+
+  function login(token, userRole) {
     localStorage.setItem("accessToken", token);
+    localStorage.setItem("role", userRole);
+
     setAccessToken(token);
+    setRole(userRole);
   }
 
-  function logout() {
-    localStorage.removeItem("accessToken");
-    setAccessToken(null);
+  async function logout() {
+    try {
+      await fetch(`${API_URL}/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("role");
+
+      setAccessToken(null);
+      setRole(null);
+
+      window.location.href = "/login";
+    }
   }
 
   return (
-    <AuthContext.Provider
-      value={{
-        accessToken,
-        login,
-        logout,
-      }}
-    >
+    <AuthContext.Provider value={{ accessToken, role, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

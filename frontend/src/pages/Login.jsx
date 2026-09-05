@@ -36,9 +36,13 @@ function Login() {
         body: JSON.stringify(formData),
       });
 
-      login(data.accessToken);
+      login(data.accessToken, data.user.role);
 
-      navigate("/dashboard");
+      if (data.user.role === "customer") {
+        navigate("/customer-dashboard");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (error) {
       setError(error.message);
     } finally {
@@ -86,6 +90,16 @@ function Login() {
             {loading ? "Logging in..." : "Login"}
           </button>
         </form>
+
+        <p>
+          Don't have an account?{" "}
+          <span
+            onClick={() => navigate("/signup")}
+            style={{ cursor: "pointer" }}
+          >
+            Sign Up
+          </span>
+        </p>
       </div>
     </div>
   );
