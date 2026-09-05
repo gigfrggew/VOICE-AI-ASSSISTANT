@@ -1,0 +1,194 @@
+.conversations-page{
+  min-height:100vh;
+  background:#f5f7fb;
+  padding:40px 8%;
+  box-sizing:border-box;
+  color:#1f2937;
+}
+
+.conversations-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:30px;
+}
+
+.conversations-header h1{
+  margin:0;
+  font-size:32px;
+}
+
+.conversations-header p{
+  margin:8px 0 0;
+  color:#6b7280;
+}
+
+.back-btn{
+  border:none;
+  border-radius:8px;
+  padding:11px 18px;
+  background:#1f2937;
+  color:white;
+  font-size:14px;
+  font-weight:600;
+  cursor:pointer;
+}
+
+.conversation-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:25px;
+}
+
+.conversation-card{
+  background:white;
+  border-radius:12px;
+  padding:25px;
+  box-shadow:0 3px 12px rgba(0,0,0,0.08);
+}
+
+.conversation-card-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:15px;
+  padding-bottom:15px;
+  border-bottom:1px solid #e5e7eb;
+}
+
+.conversation-card-header h2{
+  margin:0;
+  font-size:21px;
+}
+
+.status-badge{
+  padding:6px 12px;
+  border-radius:20px;
+  background:#fef3c7;
+  color:#92400e;
+  font-size:12px;
+  font-weight:600;
+  white-space:nowrap;
+}
+
+.conversation-card-body{
+  padding-top:18px;
+}
+
+.conversation-card-body>p{
+  margin:9px 0;
+}
+
+.conversation-section{
+  margin-top:20px;
+  padding:15px;
+  background:#f8fafc;
+  border-radius:8px;
+}
+
+.conversation-section h3{
+  margin:0 0 10px;
+  font-size:16px;
+}
+
+.conversation-section p{
+  margin:7px 0;
+  line-height:1.5;
+}
+
+.transcript-message{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  padding:10px 0;
+  border-bottom:1px solid #e5e7eb;
+}
+
+.transcript-message:last-child{
+  border-bottom:none;
+}
+
+.transcript-message strong{
+  font-size:13px;
+  color:#374151;
+}
+
+.transcript-message span{
+  line-height:1.5;
+}
+
+.empty-conversations{
+  background:white;
+  padding:50px;
+  text-align:center;
+  border-radius:12px;
+  box-shadow:0 3px 12px rgba(0,0,0,0.08);
+}
+
+.empty-conversations h2{
+  margin:0 0 10px;
+}
+
+.empty-conversations p{
+  color:#6b7280;
+}
+
+.error-message{
+  padding:12px 15px;
+  border-radius:8px;
+  background:#fee2e2;
+  color:#b91c1c;
+}
+
+@media(max-width:900px){
+  .conversation-grid{
+    grid-template-columns:1fr;
+  }
+
+  .conversations-page{
+    padding:30px 5%;
+  }
+}
+
+@media(max-width:600px){
+  .conversations-header{
+    flex-direction:column;
+    align-items:flex-start;
+    gap:15px;
+  }
+
+  .conversation-card{
+    padding:18px;
+  }
+
+  .conversation-card-header{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+
+  .empty-conversations{
+    padding:30px 20px;
+  }
+
+}
+
+.status-actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.status-actions button{
+  border:none;
+  border-radius:7px;
+  padding:9px 14px;
+  background:#1f2937;
+  color:white;
+  font-size:13px;
+  font-weight:600;
+  cursor:pointer;
+}
+
+.status-actions button:hover{
+  opacity:.85;
+}

@@ -1,0 +1,52 @@
+import express from "express";
+import cors from "cors";
+import connectDB from "./config/db.js";
+import SignUpRoute from "./routes/SignUpRoute.js"
+import LoginRoute from "./routes/LoginRoute.js";
+import RefreshTokenRoute from "./routes/RefreshTokenRoute.js";
+import AuthRoute from "./routes/AuthRoute.js"
+import CreateBusinessRoute from "./routes/BusinessRoute.js";
+import CreateWorkflowRoute from "./routes/WorkflowRoute.js";
+import ConversationRoute from "./routes/ConversationRoute.js";
+import AIConversationRoute from "./routes/AIConversationRoute.js";
+import cookieParser from "cookie-parser";
+import AITestRoute from "./routes/AITestRoute.js";
+import CalendarRoute from "./routes/CalendarRoute.js";
+
+import dotenv from "dotenv";
+dotenv.config();
+
+
+const app = express();
+
+const PORT = process.env.PORT || 5000;
+
+app.use(cors({
+  origin: "http://localhost:5173",
+  credentials: true
+}));
+
+app.use(express.json());
+
+app.use(cookieParser())
+
+connectDB();
+
+app.get("/", (req, res) => {
+  res.json("VOICE-AI Backend is running");
+});
+
+app.use("/signup", SignUpRoute)
+app.use("/login", LoginRoute);
+app.use("/refresh", RefreshTokenRoute);
+app.use("/protected",AuthRoute)
+app.use("/business", CreateBusinessRoute);
+app.use("/workflow", CreateWorkflowRoute);
+app.use("/conversation", ConversationRoute);
+app.use("/ai-test", AITestRoute);
+app.use("/ai-conversation", AIConversationRoute);
+app.use("/calendar", CalendarRoute);
+
+app.listen(PORT, () => {
+  console.log(`Server running at http://localhost:${PORT}`);
+});

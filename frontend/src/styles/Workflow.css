@@ -1,0 +1,236 @@
+.workflows-page,
+.workflow-builder {
+  width: 90%;
+  max-width: 1200px;
+  margin: 40px auto;
+  font-family: Arial, sans-serif;
+}
+
+.workflows-header,
+.workflow-builder-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.workflows-header h1,
+.workflow-builder-header h1 {
+  margin: 0;
+  font-size: 32px;
+}
+
+.workflows-header p {
+  margin-top: 8px;
+  color: #666;
+}
+
+button {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  background: #222;
+  color: white;
+}
+
+button:hover {
+  opacity: 0.85;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.create-workflow-btn {
+  background: #2563eb;
+}
+
+.workflow-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.workflow-card {
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 20px;
+  background: white;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+}
+
+.workflow-card-header {
+  margin-bottom: 15px;
+}
+
+.workflow-card-header h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.workflow-card-body p {
+  margin: 8px 0;
+  color: #444;
+}
+
+.workflow-card-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.workflow-card-actions button:first-child {
+  background: #2563eb;
+}
+
+.workflow-card-actions button:last-child {
+  background: #16a34a;
+}
+
+.empty-workflows {
+  text-align: center;
+  padding: 60px 20px;
+  border: 1px dashed #bbb;
+  border-radius: 10px;
+}
+
+.empty-workflows h2 {
+  margin-bottom: 10px;
+}
+
+.empty-workflows p {
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.workflow-builder form {
+  background: white;
+  padding: 25px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 22px;
+}
+
+.form-group label {
+  font-weight: 600;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 15px;
+  font-family: inherit;
+}
+
+.form-group textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.fields-section,
+.conditions-section {
+  margin: 30px 0;
+  padding: 25px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  background: #fafafa;
+}
+
+.fields-section h2,
+.conditions-section h2 {
+  margin-top: 0;
+}
+
+.field-builder,
+.condition-builder {
+  margin-top: 20px;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: white;
+}
+
+.field-builder h3,
+.condition-builder h3 {
+  margin-top: 0;
+}
+
+.field-builder > label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+.field-builder > label input {
+  width: auto;
+}
+
+.field-builder button,
+.condition-builder button {
+  background: #dc2626;
+}
+
+.fields-section > button,
+.conditions-section > button {
+  margin-top: 15px;
+  background: #2563eb;
+}
+
+.workflow-builder > .workflow-builder-header button {
+  background: #555;
+}
+
+.workflow-builder form > button[type="submit"] {
+  width: 100%;
+  padding: 14px;
+  margin-top: 10px;
+  background: #16a34a;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.error-message {
+  padding: 12px;
+  margin-bottom: 20px;
+  border-radius: 6px;
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+@media (max-width: 900px) {
+  .workflow-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .workflows-page,
+  .workflow-builder {
+    width: 92%;
+    margin: 25px auto;
+  }
+
+  .workflows-header,
+  .workflow-builder-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .workflow-grid {
+    grid-template-columns: 1fr;
+  }
+}
