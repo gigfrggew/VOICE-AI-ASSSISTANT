@@ -51,6 +51,6 @@ app.use("/calendar", CalendarRoute);
 app.use("/customer", CustomerRoute);
 app.use("/logout", LogoutRoute);
 
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on port ${PORT}`);
 });
