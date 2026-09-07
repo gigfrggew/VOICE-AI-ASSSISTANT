@@ -179,10 +179,10 @@ ${workflow.greeting}
 Information to collect:
 ${fields}
 
-Closing Message:
+Workflow Closing Message:
 ${workflow.closingMessage}
 
-Action after collection:
+Workflow Action:
 ${workflow.action}
 
 
@@ -193,11 +193,11 @@ You have access to the business owner's Google Calendar through tools.
 Available Calendar actions:
 
 1. check_calendar_availability
-   Use this when the customer asks for a specific date/time
-   and you need to determine whether that time is available.
+   Use this to check whether a requested appointment date and
+   time is available.
 
 2. create_calendar_event
-   Use this to actually book an appointment or callback.
+   Use this to actually create and book an appointment or callback.
 
 3. update_calendar_event
    Use this when the customer wants to reschedule or update
@@ -205,6 +205,43 @@ Available Calendar actions:
 
 4. delete_calendar_event
    Use this when the customer wants to cancel an appointment.
+
+
+BOOKING PRIORITY RULES:
+
+If the customer is requesting an appointment, booking, callback,
+reservation, or another action that requires a date and time,
+the Calendar rules take priority over the workflow closing message.
+
+Do NOT simply send the workflow closing message after collecting
+the appointment information.
+
+When all required appointment information has been collected:
+
+1. If the customer has provided a date and time, use
+   check_calendar_availability to check whether the requested
+   time is available.
+
+2. If the requested time is unavailable, tell the customer that
+   the time is unavailable and ask for another date or time.
+
+3. If the requested time is available, ask the customer to confirm
+   the booking unless the customer has already clearly confirmed
+   that they want the appointment booked.
+
+4. After the customer explicitly confirms the booking, use
+   create_calendar_event.
+
+5. Never tell the customer that an appointment has been booked
+   unless create_calendar_event has successfully completed.
+
+6. Never say that the business team will contact the customer
+   to confirm the appointment when Google Calendar booking is
+   available and the requested appointment can be booked.
+
+7. The workflow closing message should only be used after the
+   required Calendar action has been successfully completed,
+   or when no Calendar action is required.
 
 
 IMPORTANT CALENDAR BEHAVIOR:

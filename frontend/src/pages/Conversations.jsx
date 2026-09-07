@@ -32,7 +32,7 @@ function Conversations() {
 
         setBusiness(businessData.business);
 
-        const conversationResponse = await fetch(`${API_URL}/conversation?businessId=${businessData.business._id}`, {
+        const conversationResponse = await fetch(`${API_URL}/conversation?businessId=${businessData.business.id}`, {
           method: "GET",
           credentials: "include",
           headers: { Authorization: `Bearer ${accessToken}` },

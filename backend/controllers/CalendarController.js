@@ -78,14 +78,35 @@ async function GoogleCallbackController(req, res) {
 
         const { tokens } = await oauth2Client.getToken(code);
 
+        console.log("GOOGLE OAUTH TOKENS:");
+        console.log({
+            hasAccessToken: !!tokens.access_token,
+            hasRefreshToken: !!tokens.refresh_token,
+            expiryDate: tokens.expiry_date,
+        });
+
         // Save Google refresh token
-        if (tokens.refresh_token) {
-            business.googleCalendar.refreshToken = tokens.refresh_token;
+        // Google Calendar must provide a refresh token
+        // so we can access the calendar in future conversations.
+
+        if (!tokens.refresh_token) {
+            return res.status(400).json({
+                message:
+                    "Google did not provide a refresh token. Please disconnect the app from your Google Account and connect again.",
+            });
         }
 
+        business.googleCalendar.refreshToken = tokens.refresh_token;
         business.googleCalendar.connected = true;
 
         await business.save();
+
+        console.log("Google Calendar connection saved:");
+        console.log({
+            businessId: business._id,
+            connected: business.googleCalendar.connected,
+            hasRefreshToken: !!business.googleCalendar.refreshToken,
+        });
 
         console.log("Google Calendar connected successfully");
 
@@ -316,55 +337,55 @@ async function UpdateEventController(req, res) {
 
 
 async function DeleteEventController(req, res) {
-  try {
-    const { businessId } = req.body;
-    const { eventId } = req.params;
+    try {
+        const { businessId } = req.body;
+        const { eventId } = req.params;
 
-    if (!businessId || !eventId) {
-      return res.status(400).json({
-        message: "businessId and eventId are required",
-      });
+        if (!businessId || !eventId) {
+            return res.status(400).json({
+                message: "businessId and eventId are required",
+            });
+        }
+
+        const business = await Business.findOne({
+            _id: businessId,
+            owner: req.user._id,
+        });
+
+        if (!business) {
+            return res.status(404).json({
+                message: "Business not found or unauthorized",
+            });
+        }
+
+        if (
+            !business.googleCalendar ||
+            !business.googleCalendar.connected ||
+            !business.googleCalendar.refreshToken
+        ) {
+            return res.status(400).json({
+                message: "Google Calendar is not connected",
+            });
+        }
+
+        await deleteEvent(
+            business.googleCalendar.refreshToken,
+            eventId,
+            business.googleCalendar.calendarId
+        );
+
+        res.status(200).json({
+            message: "Calendar event deleted successfully",
+            eventId,
+        });
+
+    } catch (error) {
+        console.error("Delete Event Error:", error);
+
+        res.status(500).json({
+            message: "Failed to delete calendar event",
+        });
     }
-
-    const business = await Business.findOne({
-      _id: businessId,
-      owner: req.user._id,
-    });
-
-    if (!business) {
-      return res.status(404).json({
-        message: "Business not found or unauthorized",
-      });
-    }
-
-    if (
-      !business.googleCalendar ||
-      !business.googleCalendar.connected ||
-      !business.googleCalendar.refreshToken
-    ) {
-      return res.status(400).json({
-        message: "Google Calendar is not connected",
-      });
-    }
-
-    await deleteEvent(
-      business.googleCalendar.refreshToken,
-      eventId,
-      business.googleCalendar.calendarId
-    );
-
-    res.status(200).json({
-      message: "Calendar event deleted successfully",
-      eventId,
-    });
-
-  } catch (error) {
-    console.error("Delete Event Error:", error);
-
-    res.status(500).json({
-      message: "Failed to delete calendar event",
-    });
-  }
 }
 
 

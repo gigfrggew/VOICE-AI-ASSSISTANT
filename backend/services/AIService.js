@@ -124,6 +124,13 @@ async function ExecuteCalendarTool(functionCall, business) {
   const name = functionCall.name;
   const args = functionCall.args;
 
+  console.log("BUSINESS CALENDAR DATA:");
+  console.log({
+    businessId: business._id,
+    businessName: business.businessName,
+    googleCalendar: business.googleCalendar,
+  });
+
   if (
     !business.googleCalendar ||
     !business.googleCalendar.connected ||
