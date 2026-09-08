@@ -1,15 +1,15 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import Workflows from "./pages/Workflows";
-import WorkflowBuilder from "./pages/WorkflowBuilder";
-import EditWorkflow from "./pages/EditWorkflow";
-import ConversationSimulator from "./pages/ConversationSimulator";
-import Conversations from "./pages/Conversations";
-import Signup from "./pages/Signup";
-import BusinessSetup from "./pages/BusinessSetup";
-import CustomerDashboard from "./pages/CustomerDashboard";
+import Login from "./pages/Login.jsx";
+import Dashboard from "./pages/Dashboard.jsx";
+import Workflows from "./pages/Workflows.jsx";
+import WorkflowBuilder from "./pages/WorkflowBuilder.jsx";
+import EditWorkflow from "./pages/EditWorkflow.jsx";
+import ConversationSimulator from "./pages/ConversationSimulator.jsx";
+import Conversations from "./pages/Conversations.jsx";
+import Signup from "./pages/Signup.jsx";
+import BusinessSetup from "./pages/BusinessSetup.jsx";
+import CustomerDashboard from "./pages/CustomerDashboard.jsx";
+import VoiceRecorder from "./pages/VoiceRecorder.jsx";
 
 function App() {
   return (
@@ -25,11 +25,8 @@ function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/business-setup" element={<BusinessSetup />} />
         <Route path="/customer-dashboard" element={<CustomerDashboard />} />
-        <Route
-          path="/customer-conversation/:businessId/:workflowId"
-          element={<ConversationSimulator />}
-        />
-
+        <Route path="/customer-conversation/:businessId/:workflowId" element={<ConversationSimulator />} />
+        <Route path="/voice-recorder" element={<VoiceRecorder />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>

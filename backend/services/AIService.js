@@ -15,7 +15,7 @@ const ai = new OpenAI({
   apiKey: process.env.OPENROUTER_API_KEY,
 });
 
-const MODEL = "minimax/minimax-m3:free";
+const MODEL = "minimax/minimax-m3";
 
 const calendarTools = [
   {

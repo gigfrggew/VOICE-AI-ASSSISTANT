@@ -14,6 +14,8 @@ import AITestRoute from "./routes/AITestRoute.js";
 import CalendarRoute from "./routes/CalendarRoute.js";
 import CustomerRoute from "./routes/CustomerRoute.js";
 import LogoutRoute from "./routes/LogoutRoute.js";
+import VoiceRoute from "./routes/TextToSpeechRoute.js";
+import SpeechToTextRoute from "./routes/SpeechToTextRoute.js";
 
 import dotenv from "dotenv";
 dotenv.config();
@@ -64,6 +66,8 @@ app.use("/ai-conversation", AIConversationRoute);
 app.use("/calendar", CalendarRoute);
 app.use("/customer", CustomerRoute);
 app.use("/logout", LogoutRoute);
+app.use("/voice", VoiceRoute);
+app.use("/voice",SpeechToTextRoute);
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);

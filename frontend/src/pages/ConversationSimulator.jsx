@@ -3,16 +3,13 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import "../styles/Workflow.css";
 import "../styles/Simulator.css";
+import VoiceRecorder from "../pages/VoiceRecorder.jsx";
 import API_URL from "../services/api";
 
 function ConversationSimulator() {
   const { accessToken, role } = useAuth();
   const navigate = useNavigate();
-
-  const {
-    workflowId,
-    businessId,
-  } = useParams();
+  const { workflowId, businessId } = useParams();
 
   const isCustomer = role === "customer";
 
@@ -21,6 +18,7 @@ function ConversationSimulator() {
   const [conversationId, setConversationId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [userMessage, setUserMessage] = useState("");
+  const [inputMode, setInputMode] = useState("text");
   const [capturedData, setCapturedData] = useState({});
   const [status, setStatus] = useState("in_progress");
   const [action, setAction] = useState("");
@@ -38,35 +36,27 @@ function ConversationSimulator() {
         let response;
 
         if (isCustomer) {
-          response = await fetch(
-            `${API_URL}/customer/business/${businessId}/workflow/${workflowId}`,
-            {
-              method: "GET",
-              credentials: "include",
-              headers: {
-                Authorization: `Bearer ${accessToken}`,
-              },
-            }
-          );
+          response = await fetch(`${API_URL}/customer/business/${businessId}/workflow/${workflowId}`, {
+            method: "GET",
+            credentials: "include",
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          });
         } else {
-          response = await fetch(
-            `${API_URL}/workflow/${workflowId}`,
-            {
-              method: "GET",
-              credentials: "include",
-              headers: {
-                Authorization: `Bearer ${accessToken}`,
-              },
-            }
-          );
+          response = await fetch(`${API_URL}/workflow/${workflowId}`, {
+            method: "GET",
+            credentials: "include",
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          });
         }
 
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(
-            data.message || "Failed to fetch workflow"
-          );
+          throw new Error(data.message || "Failed to fetch workflow");
         }
 
         setWorkflow(data.workflow);
@@ -94,18 +84,20 @@ function ConversationSimulator() {
   async function sendMessage(event) {
     event.preventDefault();
 
-    if (
-      !userMessage.trim() ||
-      sending ||
-      !workflow ||
-      !business
-    ) {
+    if (!userMessage.trim()) {
       return;
     }
 
-    const currentMessage = userMessage.trim();
+    await processMessage(userMessage.trim());
 
     setUserMessage("");
+  }
+
+  async function processMessage(currentMessage) {
+    if (!currentMessage.trim() || sending || !workflow || !business) {
+      return null;
+    }
+
     setSending(true);
     setError("");
 
@@ -118,46 +110,48 @@ function ConversationSimulator() {
     ]);
 
     try {
-      const response = await fetch(
-        `${API_URL}/ai-conversation`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({
-            businessId: business._id || business.id,
-            workflowId: workflowId,
-            conversationId: conversationId,
-            userMessage: currentMessage,
-          }),
-        }
-      );
+      const response = await fetch(`${API_URL}/ai-conversation`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          businessId: business._id || business.id,
+          workflowId: workflowId,
+          conversationId: conversationId,
+          userMessage: currentMessage,
+        }),
+      });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          data.message || "Failed to send message"
-        );
+        throw new Error(data.message || "Failed to send message");
       }
 
       if (!conversationId) {
         setConversationId(data.conversationId);
       }
 
-      setMessages(data.transcript || []);
+      const updatedTranscript = data.transcript || [];
+
+      setMessages(updatedTranscript);
       setCapturedData(data.capturedData || {});
       setStatus(data.status || "in_progress");
       setAction(data.action || "");
-      setFollowUpStatus(
-        data.followUpStatus || "pending"
-      );
+      setFollowUpStatus(data.followUpStatus || "pending");
+
+      const lastAssistantMessage = [...updatedTranscript]
+        .reverse()
+        .find((message) => message.role === "assistant");
+
+      return lastAssistantMessage?.message || null;
     } catch (error) {
       console.error("Send message error:", error);
       setError(error.message);
+      return null;
     } finally {
       setSending(false);
     }
@@ -192,24 +186,9 @@ function ConversationSimulator() {
     return (
       <div className="workflow-builder">
         <h1>AI Conversation</h1>
-
-        <p className="error-message">
-          {error}
-        </p>
-
-        <button
-          type="button"
-          onClick={() =>
-            navigate(
-              isCustomer
-                ? "/customer-dashboard"
-                : "/workflows"
-            )
-          }
-        >
-          {isCustomer
-            ? "Back to Customer Dashboard"
-            : "Back to Workflows"}
+        <p className="error-message">{error}</p>
+        <button type="button" onClick={() => navigate(isCustomer ? "/customer-dashboard" : "/workflows")}>
+          {isCustomer ? "Back to Customer Dashboard" : "Back to Workflows"}
         </button>
       </div>
     );
@@ -219,38 +198,17 @@ function ConversationSimulator() {
     <div className="simulator-page">
       <div className="simulator-header">
         <div>
-          <h1>
-            {isCustomer
-              ? "AI Assistant"
-              : "Conversation Simulator"}
-          </h1>
+          <h1>{isCustomer ? "AI Assistant" : "Conversation Simulator"}</h1>
 
           <p>
-            {isCustomer
-              ? `Contacting ${business?.businessName}`
-              : "Testing workflow: "}
-            
-            {!isCustomer && (
-              <strong>
-                {workflow.workflowName}
-              </strong>
-            )}
+            {isCustomer ? `Contacting ${business?.businessName}` : "Testing workflow: "}
+
+            {!isCustomer && <strong>{workflow.workflowName}</strong>}
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() =>
-            navigate(
-              isCustomer
-                ? "/customer-dashboard"
-                : "/workflows"
-            )
-          }
-        >
-          {isCustomer
-            ? "Back to Dashboard"
-            : "Back to Workflows"}
+        <button type="button" onClick={() => navigate(isCustomer ? "/customer-dashboard" : "/workflows")}>
+          {isCustomer ? "Back to Dashboard" : "Back to Workflows"}
         </button>
       </div>
 
@@ -259,23 +217,16 @@ function ConversationSimulator() {
           <div className="chat-header">
             <h2>AI Receptionist</h2>
 
-            <span
-              className={`conversation-status ${status}`}
-            >
+            <span className={`conversation-status ${status}`}>
               {status}
             </span>
           </div>
 
           <div className="chat-messages">
             {messages.map((message, index) => (
-              <div
-                className={`chat-message ${message.role}`}
-                key={message._id || index}
-              >
+              <div className={`chat-message ${message.role}`} key={message._id || index}>
                 <div className="message-label">
-                  {message.role === "user"
-                    ? "You"
-                    : "AI Assistant"}
+                  {message.role === "user" ? "You" : "AI Assistant"}
                 </div>
 
                 <div className="message-content">
@@ -297,53 +248,50 @@ function ConversationSimulator() {
             )}
           </div>
 
-          {error && (
-            <p className="error-message">
-              {error}
-            </p>
+          {error && <p className="error-message">{error}</p>}
+
+          <div className="input-mode-selector">
+            <button type="button" className={inputMode === "text" ? "active-mode" : ""} onClick={() => setInputMode("text")}>
+              Text Mode
+            </button>
+
+            <button type="button" className={inputMode === "voice" ? "active-mode" : ""} onClick={() => setInputMode("voice")}>
+              Voice Mode
+            </button>
+          </div>
+
+          {inputMode === "text" ? (
+            <form className="chat-input-area" onSubmit={sendMessage}>
+              <input
+                type="text"
+                value={userMessage}
+                onChange={(event) => setUserMessage(event.target.value)}
+                placeholder="Type your message..."
+                disabled={sending}
+              />
+
+              <button type="submit" disabled={sending || !userMessage.trim()}>
+                {sending ? "Sending..." : "Send"}
+              </button>
+            </form>
+          ) : (
+            <div className="voice-input-area">
+              <VoiceRecorder
+                accessToken={accessToken}
+                onVoiceMessage={processMessage}
+                disabled={sending}
+              />
+            </div>
           )}
 
-          <form
-            className="chat-input-area"
-            onSubmit={sendMessage}
-          >
-            <input
-              type="text"
-              value={userMessage}
-              onChange={(event) =>
-                setUserMessage(event.target.value)
-              }
-              placeholder="Type your message..."
-              disabled={sending}
-            />
-
-            <button
-              type="submit"
-              disabled={
-                sending ||
-                !userMessage.trim()
-              }
-            >
-              {sending ? "Sending..." : "Send"}
-            </button>
-          </form>
-
-          <button
-            className="reset-conversation-btn"
-            type="button"
-            onClick={resetConversation}
-          >
+          <button className="reset-conversation-btn" type="button" onClick={resetConversation}>
             Reset Conversation
           </button>
         </div>
 
         <div className="simulator-info">
           <div className="info-card">
-            <h2>
-              {isCustomer
-                ? "Business Information"
-                : "Workflow Information"}
-            </h2>
+            <h2>{isCustomer ? "Business Information" : "Workflow Information"}</h2>
 
             <p>
               <strong>Business:</strong>{" "}
@@ -374,18 +322,14 @@ function ConversationSimulator() {
             <h2>Information Collected</h2>
 
             {Object.keys(capturedData).length === 0 ? (
-              <p>
-                No information collected yet.
-              </p>
+              <p>No information collected yet.</p>
             ) : (
-              Object.entries(capturedData).map(
-                ([key, value]) => (
-                  <p key={key}>
-                    <strong>{key}:</strong>{" "}
-                    {String(value)}
-                  </p>
-                )
-              )
+              Object.entries(capturedData).map(([key, value]) => (
+                <p key={key}>
+                  <strong>{key}:</strong>{" "}
+                  {String(value)}
+                </p>
+              ))
             )}
           </div>
 
