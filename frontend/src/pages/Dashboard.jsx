@@ -6,7 +6,6 @@ import { useNavigate } from "react-router-dom";
 function Dashboard() {
   const { accessToken, logout } = useAuth();
   const navigate = useNavigate();
-
   const [business, setBusiness] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -17,9 +16,7 @@ function Dashboard() {
         const response = await fetch(`${API_URL}/business`, {
           method: "GET",
           credentials: "include",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
+          headers: { Authorization: `Bearer ${accessToken}` },
         });
 
         const data = await response.json();
@@ -65,43 +62,26 @@ function Dashboard() {
           <div className="business-card">
             <h3>{business.businessName}</h3>
 
-            <p>
-              <strong>Type:</strong> {business.businessType}
-            </p>
+            <p><strong>Type:</strong> {business.businessType}</p>
 
-            <p>
-              <strong>Phone:</strong> {business.phone}
-            </p>
+            <p><strong>Phone:</strong> {business.phone}</p>
 
-            {business.description && (
-              <p>
-                <strong>Description:</strong> {business.description}
-              </p>
-            )}
+            {business.description && <p><strong>Description:</strong> {business.description}</p>}
 
-            <button
-              onClick={() => {
-                window.location.href = `${API_URL}/calendar/auth?businessId=${business.id}`;
-              }}
-            >
+            <button onClick={() => {
+              window.location.href = `${API_URL}/calendar/auth?businessId=${business.id}`;
+            }}>
               Connect Google Calendar
             </button>
           </div>
         )}
 
-        {!loading && !error && !business && (
-          <p>No business found.</p>
-        )}
+        {!loading && !error && !business && <p>No business found.</p>}
 
         {!loading && business && (
           <div>
-            <button onClick={() => navigate("/workflows")}>
-              Manage Workflows
-            </button>
-
-            <button onClick={() => navigate("/conversations")}>
-              View Conversations
-            </button>
+            <button onClick={() => navigate("/workflows")}>Manage Workflows</button>
+            <button onClick={() => navigate("/conversations")}>View Conversations</button>
           </div>
         )}
       </main>

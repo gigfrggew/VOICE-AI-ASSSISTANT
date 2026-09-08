@@ -87,7 +87,6 @@ function ConversationSimulator() {
     if (!userMessage.trim()) {
       return;
     }
-
     await processMessage(userMessage.trim());
 
     setUserMessage("");

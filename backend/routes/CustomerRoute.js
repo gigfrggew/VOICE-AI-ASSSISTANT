@@ -1,6 +1,5 @@
 import express from "express";
 import AuthMiddleware from "../middleware/AuthMiddleware.js";
-
 import {
   FindBusinessController,
   GetCustomerWorkflowController,
@@ -8,11 +7,7 @@ import {
 
 const router = express.Router();
 
-router.post(
-  "/find-business",
-  AuthMiddleware,
-  FindBusinessController
-);
+router.post("/find-business", AuthMiddleware, FindBusinessController);
 
 router.get(
   "/business/:businessId/workflow/:workflowId",

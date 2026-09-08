@@ -85,9 +85,6 @@ async function GoogleCallbackController(req, res) {
             expiryDate: tokens.expiry_date,
         });
 
-        // Save Google refresh token
-        // Google Calendar must provide a refresh token
-        // so we can access the calendar in future conversations.
 
         if (!tokens.refresh_token) {
             return res.status(400).json({

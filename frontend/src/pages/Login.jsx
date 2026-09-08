@@ -6,12 +6,7 @@ import { useAuth } from "../context/AuthContext";
 function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
-
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
-
+  const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -26,7 +21,6 @@ function Login() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-
     setError("");
     setLoading(true);
 
@@ -54,7 +48,6 @@ function Login() {
     <div className="auth-page">
       <div className="auth-card">
         <h1>CallFlow AI Assistant</h1>
-
         <h2>Login</h2>
 
         <form onSubmit={handleSubmit}>
@@ -86,17 +79,12 @@ function Login() {
 
           {error && <p className="error-message">{error}</p>}
 
-          <button type="submit" disabled={loading}>
-            {loading ? "Logging in..." : "Login"}
-          </button>
+          <button type="submit" disabled={loading}>{loading ? "Logging in..." : "Login"}</button>
         </form>
 
         <p>
           Don't have an account?{" "}
-          <span
-            onClick={() => navigate("/signup")}
-            style={{ cursor: "pointer" }}
-          >
+          <span onClick={() => navigate("/signup")} style={{ cursor: "pointer" }}>
             Sign Up
           </span>
         </p>

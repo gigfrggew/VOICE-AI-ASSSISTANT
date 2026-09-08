@@ -32,14 +32,11 @@ function Workflows() {
 
         setBusiness(businessData.business);
 
-        const workflowResponse = await fetch(
-          `${API_URL}/workflow?businessId=${businessData.business.id}`,
-          {
-            method: "GET",
-            credentials: "include",
-            headers: { Authorization: `Bearer ${accessToken}` },
-          }
-        );
+        const workflowResponse = await fetch(`${API_URL}/workflow?businessId=${businessData.business.id}`, {
+          method: "GET",
+          credentials: "include",
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
 
         const workflowData = await workflowResponse.json();
 
@@ -75,9 +72,7 @@ function Workflows() {
       <div className="workflows-page">
         <h1>Workflows</h1>
         <p className="error-message">{error}</p>
-        <button onClick={() => navigate("/dashboard")}>
-          Go to Dashboard
-        </button>
+        <button onClick={() => navigate("/dashboard")}>Go to Dashboard</button>
       </div>
     );
   }
@@ -87,22 +82,13 @@ function Workflows() {
       <div className="workflows-header">
         <div>
           <h1>Workflows</h1>
-          {business && (
-            <p>
-              Manage workflows for <strong>{business.businessName}</strong>
-            </p>
-          )}
+          {business && <p>Manage workflows for <strong>{business.businessName}</strong></p>}
         </div>
 
         <div>
-          <button onClick={() => navigate("/dashboard")}>
-            Go to Dashboard
-          </button>
+          <button onClick={() => navigate("/dashboard")}>Go to Dashboard</button>
 
-          <button
-            className="create-workflow-btn"
-            onClick={() => navigate("/workflows/create")}
-          >
+          <button className="create-workflow-btn" onClick={() => navigate("/workflows/create")}>
             + Create Workflow
           </button>
         </div>
@@ -112,9 +98,7 @@ function Workflows() {
         <div className="empty-workflows">
           <h2>No workflows yet</h2>
           <p>Create your first workflow to configure your AI receptionist.</p>
-          <button onClick={() => navigate("/workflows/create")}>
-            Create Workflow
-          </button>
+          <button onClick={() => navigate("/workflows/create")}>Create Workflow</button>
         </div>
       )}
 
@@ -129,36 +113,14 @@ function Workflows() {
               <div className="workflow-card-body">
                 <p><strong>Trigger:</strong> {workflow.trigger}</p>
                 <p><strong>Fields:</strong> {workflow.fields?.length || 0}</p>
-                <p>
-                  <strong>Action:</strong>{" "}
-                  {workflow.action || "Not configured"}
-                </p>
-                <p>
-                  <strong>Conditions:</strong>{" "}
-                  {workflow.conditions?.length || 0}
-                </p>
-                <p>
-                  <strong>Follow-up:</strong>{" "}
-                  {workflow.followUpStatus || "Pending"}
-                </p>
+                <p><strong>Action:</strong> {workflow.action || "Not configured"}</p>
+                <p><strong>Conditions:</strong> {workflow.conditions?.length || 0}</p>
+                <p><strong>Follow-up:</strong> {workflow.followUpStatus || "Pending"}</p>
               </div>
 
               <div className="workflow-card-actions">
-                <button
-                  onClick={() =>
-                    navigate(`/workflows/edit/${workflow._id}`)
-                  }
-                >
-                  Edit
-                </button>
-
-                <button
-                  onClick={() =>
-                    navigate(`/simulator/${workflow._id}`)
-                  }
-                >
-                  Test Workflow
-                </button>
+                <button onClick={() => navigate(`/workflows/edit/${workflow._id}`)}>Edit</button>
+                <button onClick={() => navigate(`/simulator/${workflow._id}`)}>Test Workflow</button>
               </div>
             </div>
           ))}
