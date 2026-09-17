@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import "../styles/Workflow.css";
@@ -15,7 +15,6 @@ function ConversationSimulator() {
 
   const [workflow, setWorkflow] = useState(null);
   const [business, setBusiness] = useState(null);
-  const [conversationId, setConversationId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [userMessage, setUserMessage] = useState("");
   const [inputMode, setInputMode] = useState("text");
@@ -27,11 +26,14 @@ function ConversationSimulator() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
 
+  const conversationIdRef = useRef(null);
+
   useEffect(() => {
     async function fetchWorkflow() {
       try {
         setLoading(true);
         setError("");
+        conversationIdRef.current = null;
 
         let response;
 
@@ -87,6 +89,7 @@ function ConversationSimulator() {
     if (!userMessage.trim()) {
       return;
     }
+
     await processMessage(userMessage.trim());
 
     setUserMessage("");
@@ -119,7 +122,7 @@ function ConversationSimulator() {
         body: JSON.stringify({
           businessId: business._id || business.id,
           workflowId: workflowId,
-          conversationId: conversationId,
+          conversationId: conversationIdRef.current,
           userMessage: currentMessage,
         }),
       });
@@ -130,8 +133,8 @@ function ConversationSimulator() {
         throw new Error(data.message || "Failed to send message");
       }
 
-      if (!conversationId) {
-        setConversationId(data.conversationId);
+      if (!conversationIdRef.current) {
+        conversationIdRef.current = data.conversationId;
       }
 
       const updatedTranscript = data.transcript || [];
@@ -157,7 +160,7 @@ function ConversationSimulator() {
   }
 
   function resetConversation() {
-    setConversationId(null);
+    conversationIdRef.current = null;
     setCapturedData({});
     setStatus("in_progress");
     setAction("");
@@ -201,7 +204,6 @@ function ConversationSimulator() {
 
           <p>
             {isCustomer ? `Contacting ${business?.businessName}` : "Testing workflow: "}
-
             {!isCustomer && <strong>{workflow.workflowName}</strong>}
           </p>
         </div>
@@ -356,4 +358,5 @@ function ConversationSimulator() {
   );
 }
 
-export default ConversationSimulator;
+export default ConversationSimulator
+

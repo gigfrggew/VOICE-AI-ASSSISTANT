@@ -278,3 +278,31 @@
     padding:12px;
   }
 }
+
+.voice-stop-button {
+  width: 52px;
+  height: 52px;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: #64748b;
+  color: white;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.voice-stop-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(100, 116, 139, 0.35);
+}
+
+.voice-stop-button:active {
+  transform: scale(0.95);
+}
+
+.voice-stop-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
