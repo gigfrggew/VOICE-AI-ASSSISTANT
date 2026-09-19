@@ -324,6 +324,121 @@ async function GetAIResponse(systemPrompt, userMessage, business) {
   }
 }
 
+async function GetAIResponseStream(systemPrompt, userMessage, business, onChunk) {
+  try {
+    let messages = [
+      {
+        role: "system",
+        content: systemPrompt,
+      },
+      {
+        role: "user",
+        content: userMessage,
+      },
+    ];
+
+    for (let i = 0; i < 5; i++) {
+      const stream = await ai.chat.completions.create({
+        model: MODEL,
+        messages,
+        tools: calendarTools,
+        tool_choice: "auto",
+        temperature: 0.7,
+        max_tokens: 1000,
+        stream: true,
+      });
+
+      let fullContent = "";
+      const toolCalls = {};
+
+      for await (const chunk of stream) {
+        const delta = chunk.choices?.[0]?.delta;
+
+        if (!delta) {
+          continue;
+        }
+
+        if (delta.content) {
+          fullContent += delta.content;
+          await onChunk(delta.content);
+        }
+
+        if (delta.tool_calls) {
+          for (const toolCall of delta.tool_calls) {
+            const index = toolCall.index;
+
+            if (!toolCalls[index]) {
+              toolCalls[index] = {
+                id: toolCall.id || "",
+                type: "function",
+                function: {
+                  name: "",
+                  arguments: "",
+                },
+              };
+            }
+
+            if (toolCall.id) {
+              toolCalls[index].id = toolCall.id;
+            }
+
+            if (toolCall.function?.name) {
+              toolCalls[index].function.name += toolCall.function.name;
+            }
+
+            if (toolCall.function?.arguments) {
+              toolCalls[index].function.arguments += toolCall.function.arguments;
+            }
+          }
+        }
+      }
+
+      const completedToolCalls = Object.values(toolCalls);
+
+      if (completedToolCalls.length === 0) {
+        return fullContent;
+      }
+
+      const assistantMessage = {
+        role: "assistant",
+        content: fullContent || null,
+        tool_calls: completedToolCalls,
+      };
+
+      messages.push(assistantMessage);
+
+      for (const toolCall of completedToolCalls) {
+        const functionName = toolCall.function.name;
+        const functionArgs = JSON.parse(toolCall.function.arguments);
+
+        console.log("AI requested tool:", functionName);
+        console.log("Tool arguments:", functionArgs);
+
+        const toolResult = await ExecuteCalendarTool(
+          {
+            name: functionName,
+            args: functionArgs,
+          },
+          business
+        );
+
+        console.log("Tool result:", toolResult);
+
+        messages.push({
+          role: "tool",
+          tool_call_id: toolCall.id,
+          content: JSON.stringify(toolResult),
+        });
+      }
+    }
+
+    throw new Error("AI exceeded the maximum number of tool calls.");
+  } catch (error) {
+    console.error("OpenRouter Streaming AI Error:", error);
+    throw error;
+  }
+}
+
 async function GetCapturedData(fields, conversationHistory) {
   try {
     const fieldInstructions = fields
@@ -399,7 +514,9 @@ Rules:
   }
 }
 
+
 export {
   GetAIResponse,
+  GetAIResponseStream,
   GetCapturedData,
 };

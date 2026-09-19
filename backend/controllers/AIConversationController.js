@@ -4,165 +4,119 @@ import Conversation from "../models/ConversationModel.js";
 
 import {
   GetAIResponse,
+  GetAIResponseStream,
   GetCapturedData,
 } from "../services/AIService.js";
 
 import EvaluateConditions from "../services/ConditionService.js";
 
+async function processAIConversation({
+  user,
+  businessId,
+  workflowId,
+  conversationId,
+  userMessage,
+  stream = false,
+  onChunk = async () => {},
+}) {
+  let business;
 
-async function AIConversationController(req, res) {
+  // ---------------------------------------
+  // 1. Check business ownership
+  // ---------------------------------------
 
-  try {
+  if (user.role === "business_owner") {
+    business = await Business.findOne({
+      _id: businessId,
+      owner: user._id,
+    });
+  } else if (user.role === "customer") {
+    business = await Business.findOne({
+      _id: businessId,
+    });
+  }
 
-    const {
-      businessId,
-      workflowId,
-      conversationId,
-      userMessage,
-    } = req.body;
+  if (!business) {
+    throw new Error("Business not found or you are not authorized");
+  }
 
+  // ---------------------------------------
+  // 2. Check workflow
+  // ---------------------------------------
 
-    // ---------------------------------------
-    // 1. Check business ownership
-    // ---------------------------------------
+  const workflow = await Workflow.findOne({
+    _id: workflowId,
+    business: businessId,
+  });
 
-    let business;
+  if (!workflow) {
+    throw new Error("Workflow not found for this business");
+  }
 
-    if (req.user.role === "business_owner") {
-      business = await Business.findOne({
-        _id: businessId,
-        owner: req.user._id,
-      });
-    } else if (req.user.role === "customer") {
-      business = await Business.findOne({
-        _id: businessId,
-      });
-    }
+  // ---------------------------------------
+  // 3. Find or create conversation
+  // ---------------------------------------
 
-    if (!business) {
-      return res.status(404).json({
-        message: "Business not found or you are not authorized",
-      });
-    }
+  let conversation;
 
-
-    // ---------------------------------------
-    // 2. Check workflow
-    // ---------------------------------------
-
-    const workflow = await Workflow.findOne({
-      _id: workflowId,
+  if (conversationId) {
+    conversation = await Conversation.findOne({
+      _id: conversationId,
       business: businessId,
+      workflow: workflowId,
     });
 
-
-    if (!workflow) {
-
-      return res.status(404).json({
-        message:
-          "Workflow not found for this business",
-      });
-
+    if (!conversation) {
+      throw new Error("Conversation not found");
     }
-
-
-    // ---------------------------------------
-    // 3. Find or create conversation
-    // ---------------------------------------
-
-    let conversation;
-
-
-    if (conversationId) {
-
-      conversation =
-        await Conversation.findOne({
-
-          _id: conversationId,
-
-          business: businessId,
-
-          workflow: workflowId,
-
-        });
-
-
-      if (!conversation) {
-
-        return res.status(404).json({
-          message:
-            "Conversation not found",
-        });
-
-      }
-
-    } else {
-
-      conversation =
-        await Conversation.create({
-
-          business: businessId,
-
-          workflow: workflowId,
-
-          callerPhone: "test-user",
-
-          transcript: [],
-
-        });
-
-    }
-
-
-    // ---------------------------------------
-    // 4. Add user message
-    // ---------------------------------------
-
-    conversation.transcript.push({
-
-      role: "user",
-
-      message: userMessage,
-
+  } else {
+    conversation = await Conversation.create({
+      business: businessId,
+      workflow: workflowId,
+      callerPhone: "test-user",
+      transcript: [],
     });
+  }
 
+  // ---------------------------------------
+  // 4. Add user message
+  // ---------------------------------------
 
-    // ---------------------------------------
-    // 5. Convert workflow fields into
-    //    AI instructions
-    // ---------------------------------------
+  conversation.transcript.push({
+    role: "user",
+    message: userMessage,
+  });
 
-    const fields = workflow.fields
-      .map(
-        (field) =>
-          `Field: ${field.name}
+  // ---------------------------------------
+  // 5. Convert workflow fields into
+  //    AI instructions
+  // ---------------------------------------
+
+  const fields = workflow.fields
+    .map(
+      (field) =>
+        `Field: ${field.name}
 Question: ${field.question}
 Required: ${field.required}`
-      )
-      .join("\n\n");
+    )
+    .join("\n\n");
 
+  // ---------------------------------------
+  // 6. Create conversation history
+  // ---------------------------------------
 
-    // ---------------------------------------
-    // 6. Create conversation history
-    // ---------------------------------------
+  const conversationHistory = conversation.transcript
+    .map(
+      (message) =>
+        `${message.role === "user" ? "Customer" : "Assistant"}: ${message.message}`
+    )
+    .join("\n");
 
-    const conversationHistory =
-      conversation.transcript
-        .map(
-          (message) =>
-            `${message.role === "user"
-              ? "Customer"
-              : "Assistant"}: ${message.message
-            }`
-        )
-        .join("\n");
+  // ---------------------------------------
+  // 7. Build AI system prompt
+  // ---------------------------------------
 
-
-    // ---------------------------------------
-    // 7. Build AI system prompt
-    // ---------------------------------------
-
-    const systemPrompt = `
+  const systemPrompt = `
 You are an AI receptionist for a small business.
 
 Follow the business workflow below.
@@ -185,7 +139,6 @@ ${workflow.closingMessage}
 Workflow Action:
 ${workflow.action}
 
-
 CALENDAR TOOL RULES:
 
 You have access to the business owner's Google Calendar through tools.
@@ -205,7 +158,6 @@ Available Calendar actions:
 
 4. delete_calendar_event
    Use this when the customer wants to cancel an appointment.
-
 
 BOOKING PRIORITY RULES:
 
@@ -243,7 +195,6 @@ When all required appointment information has been collected:
    required Calendar action has been successfully completed,
    or when no Calendar action is required.
 
-
 IMPORTANT CALENDAR BEHAVIOR:
 
 - Do not pretend that a calendar operation happened.
@@ -263,7 +214,6 @@ IMPORTANT CALENDAR BEHAVIOR:
 - Use Asia/Kolkata timezone for appointments unless another
   timezone is explicitly provided.
 
-
 GENERAL RULES:
 
 - Be polite and conversational.
@@ -277,192 +227,155 @@ GENERAL RULES:
 - Keep responses concise.
 - This conversation will eventually be used for a voice assistant.
 
-
 Previous conversation:
 
 ${conversationHistory}
 `;
 
+  // ---------------------------------------
+  // 8. Generate AI response
+  // ---------------------------------------
 
-    // ---------------------------------------
-    // 8. Generate AI response
-    // ---------------------------------------
+  let aiResponse = "";
 
-    const aiResponse =
-      await GetAIResponse(
-        systemPrompt,
-        userMessage,
-        business
-      );
-
-
-    // ---------------------------------------
-    // 9. Add AI response to transcript
-    // ---------------------------------------
-
-    conversation.transcript.push({
-
-      role: "assistant",
-
-      message: aiResponse,
-
-    });
-
-
-    // ---------------------------------------
-    // 10. Create updated conversation history
-    // ---------------------------------------
-
-    const updatedConversationHistory =
-      conversation.transcript
-        .map(
-          (message) =>
-            `${message.role === "user"
-              ? "Customer"
-              : "Assistant"}: ${message.message
-            }`
-        )
-        .join("\n");
-
-
-    // ---------------------------------------
-    // 11. Extract captured information
-    // ---------------------------------------
-
-    const capturedData =
-      await GetCapturedData(
-        workflow.fields,
-        updatedConversationHistory
-      );
-
-
-    // ---------------------------------------
-    // 12. Save captured information
-    // ---------------------------------------
-
-    conversation.capturedData =
-      capturedData;
-
-
-    // ---------------------------------------
-    // 13. Check required fields
-    // ---------------------------------------
-
-    const requiredFields =
-      workflow.fields.filter(
-        (field) =>
-          field.required === true
-      );
-
-
-    const allRequiredFieldsCollected =
-      requiredFields.every(
-        (field) => {
-
-          const value =
-            capturedData[field.name];
-
-          return (
-            value !== undefined &&
-            value !== null &&
-            value !== ""
-          );
-
-        }
-      );
-
-
-    // ---------------------------------------
-    // 14. Evaluate workflow conditions
-    // ---------------------------------------
-
-    const matchedConditions =
-      EvaluateConditions(
-        workflow.conditions,
-        capturedData
-      );
-
-
-    // ---------------------------------------
-    // 15. Mark conversation completed
-    // ---------------------------------------
-
-    if (allRequiredFieldsCollected) {
-
-      conversation.status =
-        "completed";
-
-      conversation.action =
-        workflow.action;
-
-      conversation.followUpStatus =
-        "pending";
-
-    }
-
-
-    // ---------------------------------------
-    // 16. Save conversation
-    // ---------------------------------------
-
-    await conversation.save();
-
-
-    // ---------------------------------------
-    // 17. Return response
-    // ---------------------------------------
-
-    return res.status(200).json({
-
-      message:
-        "AI conversation response generated successfully",
-
-      conversationId:
-        conversation._id,
-
-      response:
-        aiResponse,
-
-      capturedData:
-        conversation.capturedData,
-
-      status:
-        conversation.status,
-
-      action:
-        conversation.action,
-
-      followUpStatus:
-        conversation.followUpStatus,
-
-      matchedConditions,
-
-      transcript:
-        conversation.transcript,
-
-    });
-
-  } catch (error) {
-
-    console.error(
-      "AI Conversation Error:",
-      error
+  if (stream) {
+    aiResponse = await GetAIResponseStream(
+      systemPrompt,
+      userMessage,
+      business,
+      async (chunk) => {
+        aiResponse += chunk;
+        await onChunk(chunk);
+      }
     );
-
-
-    return res.status(500).json({
-
-      message:
-        "AI conversation failed",
-
-      error:
-        error.message,
-
-    });
-
+  } else {
+    aiResponse = await GetAIResponse(
+      systemPrompt,
+      userMessage,
+      business
+    );
   }
 
+  // ---------------------------------------
+  // 9. Add AI response to transcript
+  // ---------------------------------------
+
+  conversation.transcript.push({
+    role: "assistant",
+    message: aiResponse,
+  });
+
+  // ---------------------------------------
+  // 10. Create updated conversation history
+  // ---------------------------------------
+
+  const updatedConversationHistory = conversation.transcript
+    .map(
+      (message) =>
+        `${message.role === "user" ? "Customer" : "Assistant"}: ${message.message}`
+    )
+    .join("\n");
+
+  // ---------------------------------------
+  // 11. Extract captured information
+  // ---------------------------------------
+
+  const capturedData = await GetCapturedData(
+    workflow.fields,
+    updatedConversationHistory
+  );
+
+  // ---------------------------------------
+  // 12. Save captured information
+  // ---------------------------------------
+
+  conversation.capturedData = capturedData;
+
+  // ---------------------------------------
+  // 13. Check required fields
+  // ---------------------------------------
+
+  const requiredFields = workflow.fields.filter(
+    (field) => field.required === true
+  );
+
+  const allRequiredFieldsCollected = requiredFields.every((field) => {
+    const value = capturedData[field.name];
+
+    return value !== undefined && value !== null && value !== "";
+  });
+
+  // ---------------------------------------
+  // 14. Evaluate workflow conditions
+  // ---------------------------------------
+
+  const matchedConditions = EvaluateConditions(
+    workflow.conditions,
+    capturedData
+  );
+
+  // ---------------------------------------
+  // 15. Mark conversation completed
+  // ---------------------------------------
+
+  if (allRequiredFieldsCollected) {
+    conversation.status = "completed";
+    conversation.action = workflow.action;
+    conversation.followUpStatus = "pending";
+  }
+
+  // ---------------------------------------
+  // 16. Save conversation
+  // ---------------------------------------
+
+  await conversation.save();
+
+  return {
+    conversationId: conversation._id,
+    response: aiResponse,
+    capturedData: conversation.capturedData,
+    status: conversation.status,
+    action: conversation.action,
+    followUpStatus: conversation.followUpStatus,
+    matchedConditions,
+    transcript: conversation.transcript,
+  };
 }
 
+// ---------------------------------------
+// Normal HTTP AI conversation
+// ---------------------------------------
 
+async function AIConversationController(req, res) {
+  try {
+    const {
+      businessId,
+      workflowId,
+      conversationId,
+      userMessage,
+    } = req.body;
+
+    const result = await processAIConversation({
+      user: req.user,
+      businessId,
+      workflowId,
+      conversationId,
+      userMessage,
+    });
+
+    return res.status(200).json({
+      message: "AI conversation response generated successfully",
+      ...result,
+    });
+  } catch (error) {
+    console.error("AI Conversation Error:", error);
+
+    return res.status(500).json({
+      message: "AI conversation failed",
+      error: error.message,
+    });
+  }
+}
+
+export { processAIConversation };
 export default AIConversationController;

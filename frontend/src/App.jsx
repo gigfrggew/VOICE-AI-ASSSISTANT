@@ -9,7 +9,6 @@ import Conversations from "./pages/Conversations.jsx";
 import Signup from "./pages/Signup.jsx";
 import BusinessSetup from "./pages/BusinessSetup.jsx";
 import CustomerDashboard from "./pages/CustomerDashboard.jsx";
-import VoiceRecorder from "./pages/VoiceRecorder.jsx";
 
 function App() {
   return (
@@ -26,7 +25,6 @@ function App() {
         <Route path="/business-setup" element={<BusinessSetup />} />
         <Route path="/customer-dashboard" element={<CustomerDashboard />} />
         <Route path="/customer-conversation/:businessId/:workflowId" element={<ConversationSimulator />} />
-        <Route path="/voice-recorder" element={<VoiceRecorder />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
