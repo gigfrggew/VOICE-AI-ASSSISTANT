@@ -20,6 +20,14 @@ function VoiceRecorder({ accessToken, onVoiceMessage, disabled }) {
   const currentAudioRef = useRef(null);
   const cancelRecordingRef = useRef(false);
 
+  const isAISpeakingRef = useRef(false);
+
+  const aiMonitorStreamRef = useRef(null);
+  const aiMonitorContextRef = useRef(null);
+  const aiMonitorAnalyserRef = useRef(null);
+  const aiMonitorCheckRef = useRef(null);
+  const aiUserSpeechDetectedRef = useRef(false);
+
   async function startRecording() {
     if (!shouldContinueRef.current) {
       shouldContinueRef.current = true;
@@ -145,27 +153,162 @@ function VoiceRecorder({ accessToken, onVoiceMessage, disabled }) {
     silenceCheckRef.current = requestAnimationFrame(detectSilence);
   }
 
-  function stopRecording(isAutomatic = false) {
-    if (!isAutomatic) {
-      shouldContinueRef.current = false;
-      cancelRecordingRef.current = true;
-      setIsConversationActive(false);
-
-      if (restartTimerRef.current) {
-        clearTimeout(restartTimerRef.current);
-        restartTimerRef.current = null;
+  async function startAIMicrophoneMonitor() {
+    try {
+      if (!shouldContinueRef.current || !isAISpeakingRef.current) {
+        return;
       }
-    }
 
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
 
-      if (isAutomatic) {
-        setMessage("Converting speech to text...");
+      if (!shouldContinueRef.current || !isAISpeakingRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
       }
+
+      aiMonitorStreamRef.current = stream;
+
+      const audioContext = new AudioContext();
+      const analyser = audioContext.createAnalyser();
+
+      analyser.fftSize = 2048;
+
+      const source = audioContext.createMediaStreamSource(stream);
+      source.connect(analyser);
+
+      aiMonitorContextRef.current = audioContext;
+      aiMonitorAnalyserRef.current = analyser;
+      aiUserSpeechDetectedRef.current = false;
+
+      console.log("AI speaking - microphone monitor started");
+
+      monitorAISpeech();
+    } catch (error) {
+      console.error("AI microphone monitor error:", error);
     }
   }
+
+  function monitorAISpeech() {
+    if (!aiMonitorAnalyserRef.current || !isAISpeakingRef.current) {
+      return;
+    }
+
+    const analyser = aiMonitorAnalyserRef.current;
+    const dataArray = new Uint8Array(analyser.fftSize);
+
+    analyser.getByteTimeDomainData(dataArray);
+
+    let sum = 0;
+
+    for (let i = 0; i < dataArray.length; i++) {
+      const normalizedValue = (dataArray[i] - 128) / 128;
+      sum += normalizedValue * normalizedValue;
+    }
+
+    const volume = Math.sqrt(sum / dataArray.length);
+    const voiceThreshold = 0.02;
+
+    if (volume > voiceThreshold && !aiUserSpeechDetectedRef.current) {
+      aiUserSpeechDetectedRef.current = true;
+
+      console.log("User voice detected while AI is speaking");
+
+      handleAIInterruption();
+      return;
+    }
+
+    aiMonitorCheckRef.current = requestAnimationFrame(monitorAISpeech);
+  }
+
+  async function handleAIInterruption() {
+    if (!isAISpeakingRef.current || !shouldContinueRef.current) {
+      return;
+    }
+
+    console.log("Interrupting AI voice...");
+
+    isAISpeakingRef.current = false;
+
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current.currentTime = 0;
+      currentAudioRef.current = null;
+    }
+
+    await stopAIMicrophoneMonitor();
+
+    setMessage("Listening...");
+
+    if (restartTimerRef.current) {
+      clearTimeout(restartTimerRef.current);
+      restartTimerRef.current = null;
+    }
+
+    if (!mediaRecorderRef.current) {
+      startRecording();
+    }
+  }
+
+  async function stopAIMicrophoneMonitor() {
+    if (aiMonitorCheckRef.current) {
+      cancelAnimationFrame(aiMonitorCheckRef.current);
+      aiMonitorCheckRef.current = null;
+    }
+
+    if (aiMonitorStreamRef.current) {
+      aiMonitorStreamRef.current.getTracks().forEach((track) => track.stop());
+      aiMonitorStreamRef.current = null;
+    }
+
+    if (aiMonitorContextRef.current) {
+      try {
+        await aiMonitorContextRef.current.close();
+      } catch (error) {
+        console.error("AI monitor audio context error:", error);
+      }
+
+      aiMonitorContextRef.current = null;
+    }
+
+    aiMonitorAnalyserRef.current = null;
+    aiUserSpeechDetectedRef.current = false;
+  }
+function stopRecording(isAutomatic = false) {
+  if (!isAutomatic) {
+    shouldContinueRef.current = false;
+    cancelRecordingRef.current = true;
+    setIsConversationActive(false);
+    setMessage("");
+
+    isAISpeakingRef.current = false;
+    stopAIMicrophoneMonitor();
+
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
+    }
+
+    if (restartTimerRef.current) {
+      clearTimeout(restartTimerRef.current);
+      restartTimerRef.current = null;
+    }
+  }
+
+  if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+    mediaRecorderRef.current.stop();
+    setIsRecording(false);
+
+    if (isAutomatic) {
+      setMessage("Converting speech to text...");
+    }
+  }
+}
 
   function restartListening() {
     if (!shouldContinueRef.current) {
@@ -266,8 +409,15 @@ function VoiceRecorder({ accessToken, onVoiceMessage, disabled }) {
       const audio = new Audio(audioUrl);
 
       currentAudioRef.current = audio;
+      isAISpeakingRef.current = true;
 
-      audio.onended = () => {
+      await startAIMicrophoneMonitor();
+
+      audio.onended = async () => {
+        isAISpeakingRef.current = false;
+
+        await stopAIMicrophoneMonitor();
+
         URL.revokeObjectURL(audioUrl);
         currentAudioRef.current = null;
 
@@ -277,7 +427,11 @@ function VoiceRecorder({ accessToken, onVoiceMessage, disabled }) {
         }
       };
 
-      audio.onerror = () => {
+      audio.onerror = async () => {
+        isAISpeakingRef.current = false;
+
+        await stopAIMicrophoneMonitor();
+
         URL.revokeObjectURL(audioUrl);
         currentAudioRef.current = null;
 
@@ -293,6 +447,9 @@ function VoiceRecorder({ accessToken, onVoiceMessage, disabled }) {
         setMessage("AI is speaking...");
       }
     } catch (error) {
+      isAISpeakingRef.current = false;
+      await stopAIMicrophoneMonitor();
+
       console.error("Text To Speech Error:", error);
 
       if (shouldContinueRef.current) {
